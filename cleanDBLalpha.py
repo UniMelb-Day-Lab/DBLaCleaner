@@ -152,7 +152,7 @@ def demultiplexTrim(barcodefile, read1, read2, cpu, verbose):
   if verbose:
     print "running...", flexbar_cmd
 
-  # check_call(flexbar_cmd, shell=True)
+  check_call(flexbar_cmd, shell=True)
 
   #Run flexbar splitslitting on read2
   for r1 in glob.glob("*flexBarRead1*1.fastq"):
@@ -177,7 +177,7 @@ def demultiplexTrim(barcodefile, read1, read2, cpu, verbose):
     if verbose:
       print "running...", flexbar_cmd
 
-    # check_call(flexbar_cmd, shell=True)
+    check_call(flexbar_cmd, shell=True)
 
   return total_paired_count
 
@@ -570,18 +570,18 @@ def main():
   total_paired_count = demultiplexTrim(barcodefile, args.read1, args.read2
     , args.cpu, args.verbose)
 
-  # mergePear(pairedMIDs, args.cpu, args.verbose)
+  mergePear(pairedMIDs, args.cpu, args.verbose)
 
-  # filterReads(args.filterReads, args.verbose)
+  filterReads(args.filterReads, args.verbose)
 
-  # removeLowSupportReads(args.perID, args.min_size, args.verbose)
+  removeLowSupportReads(args.perID, args.min_size, args.verbose)
 
   combinedFile = os.path.basename(args.read1[:-7])+"_combinedNotClean.fasta"
-  # combineReadFiles(combinedFile, args.verbose)
+  combineReadFiles(combinedFile, args.verbose)
 
-  # filterWithHMMER(combinedFile
-  #   , args.outputdir + os.path.basename(args.read1[:-7])
-  #   , args.cpu, args.verbose)
+  filterWithHMMER(combinedFile
+    , args.outputdir + os.path.basename(args.read1[:-7])
+    , args.cpu, args.verbose)
 
   #Get contaminant filtering counts
   total_reads_before_contaminant_filtering = countReads(combinedFile)
