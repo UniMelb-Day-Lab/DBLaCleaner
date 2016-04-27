@@ -130,7 +130,7 @@ def demultiplexTrim(barcodefile, read1, read2, cpu, verbose):
 
   total_paired_count = checkFastqPaired(read1, read2, verbose)
 
-  opts = (" --barcode-threshold 1"
+  opts = (" --barcode-threshold 0"
     + " --max-uncalled 15"
     + " --removal-tags"
     + " --barcode-trim-end LEFT"
@@ -193,7 +193,7 @@ def mergePear(pairedMIDs, cpu, verbose):
       print "Skipping empty read files: ", r1[:-7]
       continue
 
-    #The the reads were in the correct orientation orignally so swap back
+    #The reads were in the correct orientation orignally so swap back
     if re.match(r'.*forward.*reverse.*', r1):
       r1,r2 = r2,r1
 
@@ -218,8 +218,10 @@ def mergePear(pairedMIDs, cpu, verbose):
 
   #Now merge files based on MID combinations
   for mid in pairedMIDs:
-    filenames = glob.glob("*B_" + mid[0] + "_*B_" + mid[1] + "*.assembled.fastq")
-    filenames += glob.glob("*B_" + mid[1] + "_*B_" + mid[0] + "*.assembled.fastq")
+    filenames = glob.glob("*B_" + mid[0] + "_*B_" + mid[1] + "_*.assembled.fastq")
+    if mid[0]!=mid[1]:
+      #add other direction
+      filenames += glob.glob("*B_" + mid[1] + "_*B_" + mid[0] + "_*.assembled.fastq")
     files = []
     for f in filenames:
       #check we have both forward and reverse reads
@@ -427,8 +429,8 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
   #Now merge files based on MID combinations
   pearStats = {}
   for mid in pairedMIDs:
-    filenames = glob.glob("*B_" + mid[0] + "_*B_" + mid[1] + "*pearOut.log")
-    filenames += glob.glob("*B_" + mid[1] + "_*B_" + mid[0] + "*pearOut.log")
+    filenames = glob.glob("*B_" + mid[0] + "_*B_" + mid[1] + "*_pearOut.log")
+    filenames += glob.glob("*B_" + mid[1] + "_*B_" + mid[0] + "*_pearOut.log")
     sample = pairedMIDs[mid]
     pearStats[sample] = readPearLog(filenames[0])
     for f in filenames[1:]:
