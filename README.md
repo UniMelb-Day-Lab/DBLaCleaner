@@ -10,8 +10,9 @@ At the moment the pipeline does not attempt to deal with chimeric sequences. The
 ##Instructions
 ```
 usage: cleanDBLalpha.py [-h] -o OUTPUTDIR -r READ1 -R READ2 -d DESC [--filter]
-                        [--minSize MIN_SIZE] [--perID PERID] [--cpu CPU]
-                        [--verbose]
+                        [--minSize MIN_SIZE]
+                        [--barcodeThreshold BARCODE_THRESHOLD] [--perID PERID]
+                        [--cpu CPU] [--verbose]
 
 Process paired end Illumina reads to obtain DBLalpha OTUs.
 
@@ -28,6 +29,9 @@ optional arguments:
   --filter              filter merged reads using usearch if more than 1
                         expected error (default=False)
   --minSize MIN_SIZE    minimum support for a read to be kept. (default=4)
+  --barcodeThreshold BARCODE_THRESHOLD
+                        number of errors allowed in a barcode/primer pair.
+                        (default=0)
   --perID PERID         percentage ID threshold. (default=0.96)
   --cpu CPU             number of cpus to use. (default=1)
   --verbose             print verbose output (default=False)
