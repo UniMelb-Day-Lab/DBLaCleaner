@@ -13,7 +13,7 @@ USEARCH = "/home/users/allstaff/tonkin-hill.g/DBLalpha/third_party/usearch8.1.18
 HMMERSEARCH = "hmmsearch"
 DBLA_HMM = "/home/users/allstaff/tonkin-hill.g/DBLalpha/data/Rask_ref/atag.hmm"
 FASTQC = "fastqc"
-BLAST = "blast"
+BLAST = "blastn"
 VAR_BLAST_DB = "/home/users/allstaff/tonkin-hill.g/DBLaCleaner/data/blastDB_rask_DBLa_3D7_DD2_HB3"
 
 
@@ -441,7 +441,7 @@ def blastAgainstVAR(fastafile, outputfile, perID
   if verbose:
     print "running... ", blast_cmd
 
-  check_call(blast_cmd)
+  check_call(blast_cmd, shell=True)
 
   #get best hists from blast
   blast_hits = {}
@@ -460,7 +460,7 @@ def blastAgainstVAR(fastafile, outputfile, perID
   #Counts hits by sample
   sample_counts = defaultdict(Counter)
   for hit in blast_hits:
-    sample = hit.split("=sample")[1]
+    sample = hit.split("sample=")[1]
     ref_isolate = blast_hits[hit][0].split("_")[0]
     sample_counts[sample][ref_isolate] += 1
 
