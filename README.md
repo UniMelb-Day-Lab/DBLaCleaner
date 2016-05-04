@@ -36,3 +36,9 @@ optional arguments:
   --cpu CPU             number of cpus to use. (default=1)
   --verbose             print verbose output (default=False)
 ```
+##Generating summary report
+To generate a nice summary report of the cleaning run a Rmarkdown files is provided. At the moment it can be compiled using the command below assuming R is installed along with the R libraries `data.table`, `ggplot2`, `knitr` and `stringr`. Hopefully this will be made a bit easier in the future.
+
+```
+R -e 'rmarkdown::render("/path/to/summaryReport.Rmd", params = list(summary_file = "/path/to/summaryStatistics.log"), output_file="/output/path/summaryStatistics.html")'
+```
