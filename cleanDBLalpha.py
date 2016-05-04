@@ -5,12 +5,17 @@ import glob
 import re
 from itertools import izip
 from mungo.fasta import FastaReader
+from collections import defaultdict, Counter
 
 PEAR = "pear"
 FLEXBAR = "/home/users/allstaff/tonkin-hill.g/DBLalpha/third_party/flexbar_v2.5_linux64/flexbar-2.5.0/flexbar"
 USEARCH = "/home/users/allstaff/tonkin-hill.g/DBLalpha/third_party/usearch8.1.1831"
 HMMERSEARCH = "hmmsearch"
 DBLA_HMM = "/home/users/allstaff/tonkin-hill.g/DBLalpha/data/Rask_ref/atag.hmm"
+FASTQC = "fastqc"
+BLAST = "blast"
+VAR_BLAST_DB = "/home/users/allstaff/tonkin-hill.g/DBLaCleaner/data/blastDB_rask_DBLa_3D7_DD2_HB3"
+
 
 FORWARD_PRIMER = "GNNNGNAGTTTNGC"
 REVERSE_PRIMER = "NNCCANTCNTNNNACCA"
@@ -75,6 +80,19 @@ def checkFastqPaired(read1file, read2file, verbose):
 
   return count
 
+
+def runFastQC(readfile, outputdir, verbose):
+
+  fastqc_cmd = (FASTQC
+    + " -o " + outputdir
+    + " " + readfile)
+
+  if verbose:
+    print "running... ", fastqc_cmd
+
+  check_call(fastqc_cmd, shell=True)
+
+  return
 
 def convertDescToFlexBarcodes(descfile, outputfile, verbose):
   pairedMIDs = {}
@@ -321,7 +339,7 @@ def combineReadFiles(outputfile, verbose):
   with open(outputfile, 'w') as outfile:
     for f in glob.glob("*_lowSupportFiltered.fasta"):
       for h,s in FastaReader(f):
-        outfile.write(">" + h.split("size=")[0]+";sample=" + f[:-59] + "\n")
+        outfile.write(">" + h + "sample=" + f.split("_demultiplex")[0] + "\n")
         outfile.write(s + "\n")
 
   return
@@ -407,9 +425,52 @@ def readFlexBarLog(filename):
 
   return flexbarResults
 
+def blastAgainstVAR(fastafile, outputfile, perID
+  , cpu, verbose):
+  #Run blast
+  blast_cmd = (BLAST
+    + " -db " + VAR_BLAST_DB
+    + " -evalue 1e-50 "
+    + " -strand 'plus'"
+    + " -outfmt 6"
+    + " -perc_identity " + str(perID*100.0)
+    + " -num_threads " + str(cpu)
+    + " -query " + fastafile
+    + " -out " + outputfile)
+
+  if verbose:
+    print "running... ", blast_cmd
+
+  check_call(blast_cmd)
+
+  #get best hists from blast
+  blast_hits = {}
+  with open(outputfile, 'r') as infile:
+    for line in infile:
+      line = line.strip().split()
+      q = line[0]
+      s = line[1]
+      score = float(line[-1])
+      if q in blast_hits:
+        if blast_hits[q][1] < score:
+          blast_hits[q] = (s, score)
+      else:
+        blast_hits[q] = (s,score)
+
+  #Counts hits by sample
+  sample_counts = defaultdict(Counter)
+  for hit in blast_hits:
+    sample = hit.split("=sample")[1]
+    ref_isolate = blast_hits[hit][0].split("_")[0]
+    sample_counts[sample][ref_isolate] += 1
+
+  return sample_counts
+
+
 def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
   , total_reads_before_contaminant_filtering
   , total_reads_after_contaminant_filtering
+  , blast_isolate_counts
   , verbose):
 
   ##Calculate flexbar summary statisics
@@ -482,7 +543,8 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
     outfile.write("#######  Sample specific summary statistics  #######\n")
     #now write out sample specific statistics
     outfile.write(",".join(["Sample", "PreMerge", "Merged", "Discarded"
-      , "Not Assembled", "Filtered", "Centroids", "Centroids with support"])+"\n")
+      , "Not Assembled", "Filtered", "Centroids", "Centroids with support"
+      , "3D7", "DD2", "HB3"])+"\n")
 
     for sample in pearStats:
       outfile.write(",".join([sample
@@ -493,6 +555,9 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
         , str(pearStats[sample]["total"] - initalCounts[sample])
         , str(centroidCounts[sample])
         , str(supportCentroids[sample])
+        , str(blast_isolate_counts[sample]["3D7"])
+        , str(blast_isolate_counts[sample]["DD2"])
+        , str(blast_isolate_counts[sample]["HB3"])
         ])+ "\n")
 
   return
@@ -563,6 +628,10 @@ def main():
   curr_dir = os.getcwd()
   os.chdir(outputdir)
 
+  runFastQC(args.read1, args.outputdir, args.verbose)
+  runFastQC(args.read2, args.outputdir, args.verbose)
+
+
   barcodefile, pairedMIDs = convertDescToFlexBarcodes(args.desc
     , outputdir + "barcodesWithPrimer.fasta"
     , args.verbose)
@@ -588,11 +657,18 @@ def main():
   total_reads_after_contaminant_filtering = countReads(args.outputdir
     + os.path.basename(args.read1[:-7]) + "_DBLa_cleaned.fasta")
 
+  blast_isolate_counts = blastAgainstVAR(
+    args.outputdir + os.path.basename(args.read1[:-7]) + "_DBLa_cleaned.fasta"
+    , outputdir + "BlastSearch_VAR_ref.txt"
+    , args.perID
+    , args.cpu, args.verbose)
+
   calculateSummaryStatistics(pairedMIDs
     , args.outputdir + "summaryStatistics.log"
     , total_paired_count
     , total_reads_before_contaminant_filtering
     , total_reads_after_contaminant_filtering
+    , blast_isolate_counts
     , args.verbose)
 
 
