@@ -1,0 +1,66 @@
+---
+title: "Summary Report"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    fig_width: 15
+    fig_height: 10
+params:
+  summary_file: "summaryStatistics.log"
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      echo=FALSE, warning=FALSE, message=FALSE,
+                      tidy=TRUE)
+options(width = 1000)
+```
+
+
+
+```{r}
+##Load required libraries and summary output
+
+library(ggplot2)
+library(stringr)
+library(knitr)
+library(data.table)
+
+summary_file = params$summary_file
+  #"/home/users/allstaff/tonkin-hill.g/DBLalpha/verificationOfData/pilotComparisons/Illumina/newPipeline/pool1/newPipeline_error0/summaryStatistics.log"
+```
+
+##Contaminant Statistics
+```{r, results='asis'}
+lines <- readLines(summary_file, n=11)
+lines <- gsub("#", "", lines)
+contam <- str_split_fixed(str_trim(lines[1:3]), ": ",2)
+colnames(contam) <- c("Statistic", "Number of reads")
+kable(contam)
+```
+
+##Demultiplexing Summary Statistics
+```{r}
+demul <- str_split_fixed(str_trim(lines[5:11]), ": ",2)
+colnames(demul) <- c("Statistic", "Number of reads")
+kable(demul)
+```
+
+##Sample Summary Plots
+**Note:**The plot can be enlarged by right clicking and opening it in a new tab.
+```{r, fig.height=10, fig.width=15}
+samples <- fread(summary_file, header = TRUE, skip=12, sep = ",", data.table = FALSE)
+samples_melt <- melt(samples, id.vars="Sample", value.name="Read count")
+
+gg <- ggplot(samples_melt, aes(x=Sample, y=`Read count`))
+gg <- gg + geom_bar(stat="identity")
+gg <- gg + facet_wrap(~variable, ncol=1, scales="free_y")
+gg <- gg + theme_bw()
+gg <- gg + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+gg
+```
+
+##Sample Summary Table
+```{r}
+kable(samples)
+```
