@@ -140,7 +140,8 @@ def convertDescToFlexBarcodes(descfile, outputfile, verbose):
 
   return outputfile, pairedMIDs
 
-def demultiplexTrim(barcodefile, read1, read2, cpu, verbose):
+def demultiplexTrim(barcodefile, read1, read2, barcode_threshold
+  , cpu, verbose):
 
   #Check read inputs
   if verbose:
@@ -148,7 +149,7 @@ def demultiplexTrim(barcodefile, read1, read2, cpu, verbose):
 
   total_paired_count = checkFastqPaired(read1, read2, verbose)
 
-  opts = (" --barcode-threshold 0"
+  opts = (" --barcode-threshold " + str(barcode_threshold)
     + " --max-uncalled 15"
     + " --removal-tags"
     + " --barcode-trim-end LEFT"
@@ -590,6 +591,10 @@ def main():
   parser.add_argument('--minSize', dest='min_size', type=int, default=4
     , help="minimum support for a read to be kept. (default=4)")
 
+  parser.add_argument('--barcodeThreshold', dest='barcode_threshold', type=int
+    , default=0
+    , help="number of errors allowed in a barcode/primer pair. (default=0)")
+
   parser.add_argument('--perID', dest='perID', type=float, default=0.96
     , help="percentage ID threshold. (default=0.96)")
 
@@ -637,6 +642,7 @@ def main():
     , args.verbose)
 
   total_paired_count = demultiplexTrim(barcodefile, args.read1, args.read2
+    , args.barcode_threshold
     , args.cpu, args.verbose)
 
   mergePear(pairedMIDs, args.cpu, args.verbose)
