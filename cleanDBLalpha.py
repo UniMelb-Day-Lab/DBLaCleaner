@@ -622,8 +622,8 @@ def main():
     , default=False
     , help='filter chimeric reads using uchime denovo algorithm. (default=False)')
 
-  parser.add_argument('--minSize', dest='min_size', type=int, default=4
-    , help="minimum support for a read to be kept. (default=4)")
+  parser.add_argument('--minSize', dest='min_size', type=int, default=15
+    , help="minimum support for a read to be kept. (default=15)")
 
   parser.add_argument('--barcodeThreshold', dest='barcode_threshold', type=int
     , default=0
