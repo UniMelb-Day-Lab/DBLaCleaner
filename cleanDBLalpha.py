@@ -272,7 +272,7 @@ def filterReads(filterReads, verbose):
 
     check_call(usearch_filter_cmd, shell=True)
 
-def removeLowSupportReads(per_id, min_size, verbose):
+def removeLowSupportReads(per_id, min_size, chimeric_filt, verbose):
 
   for f in glob.glob("*_demultiplexTrimMerged.fasta"):
     #intially remove singletons
@@ -287,10 +287,27 @@ def removeLowSupportReads(per_id, min_size, verbose):
 
     check_call(usearch_cmd, shell=True)
 
+    #optionally filter out chimeric reads
+    if chimeric_filt:
+      usearch_cmd = (USEARCH
+        + " -uchime_denovo"
+        + " " + f[:-6] + "_unique.fasta"
+        + " -nonchimeras" + f[:-6] + "_ncdenovo.fasta"
+        + " -chimeras " + f[:-6] + "_chimeras.fasta")
+
+      if verbose:
+        print "running... ", usearch_cmd
+
+      check_call(usearch_cmd, shell=True)
+
+      unique_fasta_file = f[:-6] + "_ncdenovo.fasta"
+    else:
+      unique_fasta_file = f[:-6] + "_unique.fasta"
+
     #cluster unique reads and annotate with size
     usearch_cmd = (USEARCH
       + " -cluster_fast"
-      + " " + f[:-6] + "_unique.fasta"
+      + " " + unique_fasta_file
       + " -centroids " + f[:-6] + "_centroids.fasta"
       + " -sort size"
       + " -id " + str(per_id))
@@ -472,6 +489,7 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
   , total_reads_before_contaminant_filtering
   , total_reads_after_contaminant_filtering
   , blast_isolate_counts
+  , chimeric_filt
   , verbose):
 
   ##Calculate flexbar summary statisics
@@ -511,6 +529,16 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
     sample = f.split("_demultiplexTrimMerged")[0]
     initalCounts[sample] = countReads(f)
 
+  #Count number of chimeric reads
+  if chimeric_filt:
+    chimericCounts = {}
+    for f in glob.glob("*__ncdenovo.fasta"):
+      sample = f.split("_demultiplexTrimMerged")[0]
+      chimericCounts[sample] = countReads(f)
+  else:
+    for sample in initalCounts:
+      chimericCounts[sample] = 0
+
   #Count number of centroids
   centroidCounts = {}
   for f in glob.glob("*_demultiplexTrimMerged_centroids.fasta"):
@@ -544,7 +572,8 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
     outfile.write("#######  Sample specific summary statistics  #######\n")
     #now write out sample specific statistics
     outfile.write(",".join(["Sample", "PreMerge", "Merged", "Discarded"
-      , "Not Assembled", "Filtered", "Centroids", "Centroids with support"
+      , "Not Assembled", "Filtered", "Chimeric", "Centroids"
+      , "Centroids with support"
       , "3D7", "DD2", "HB3"])+"\n")
 
     for sample in pearStats:
@@ -554,6 +583,7 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
         , str(pearStats[sample]["discarded"])
         , str(pearStats[sample]["not_assembled"])
         , str(pearStats[sample]["total"] - initalCounts[sample])
+        , str(chimericCounts[sample])
         , str(centroidCounts[sample])
         , str(supportCentroids[sample])
         , str(blast_isolate_counts[sample]["3D7"])
@@ -587,6 +617,10 @@ def main():
   parser.add_argument('--filter', dest='filterReads', action='store_true'
     , default=False
     , help='filter merged reads using usearch if more than 1 expected error (default=False)')
+
+  parser.add_argument('--chimeric', dest='filterChimeric', action='store_true'
+    , default=False
+    , help='filter chimeric reads using uchime denovo algorithm. (default=False)')
 
   parser.add_argument('--minSize', dest='min_size', type=int, default=4
     , help="minimum support for a read to be kept. (default=4)")
@@ -649,7 +683,8 @@ def main():
 
   filterReads(args.filterReads, args.verbose)
 
-  removeLowSupportReads(args.perID, args.min_size, args.verbose)
+  removeLowSupportReads(args.perID, args.min_size, args.filterChimeric
+    , args.verbose)
 
   combinedFile = os.path.basename(args.read1[:-7])+"_combinedNotClean.fasta"
   combineReadFiles(combinedFile, args.verbose)
@@ -675,6 +710,7 @@ def main():
     , total_reads_before_contaminant_filtering
     , total_reads_after_contaminant_filtering
     , blast_isolate_counts
+    , args.filterChimeric
     , args.verbose)
 
 
