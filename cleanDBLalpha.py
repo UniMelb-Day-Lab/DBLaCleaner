@@ -171,7 +171,7 @@ def demultiplexTrim(barcodefile, read1, read2, barcode_threshold
   if verbose:
     print "running...", flexbar_cmd
 
-  check_call(flexbar_cmd, shell=True)
+  # check_call(flexbar_cmd, shell=True)
 
   #Run flexbar splitslitting on read2
   for r1 in glob.glob("*flexBarRead1*1.fastq"):
@@ -196,7 +196,7 @@ def demultiplexTrim(barcodefile, read1, read2, barcode_threshold
     if verbose:
       print "running...", flexbar_cmd
 
-    check_call(flexbar_cmd, shell=True)
+    # check_call(flexbar_cmd, shell=True)
 
   return total_paired_count
 
@@ -280,6 +280,7 @@ def removeLowSupportReads(per_id, min_size, chimeric_filt, verbose):
       + " -derep_prefix"
       + " " + f
       + " -fastaout " + f[:-6] + "_unique.fasta"
+      + " -minuniquesize 2"
       + " -sizeout")
 
     if verbose:
@@ -292,7 +293,7 @@ def removeLowSupportReads(per_id, min_size, chimeric_filt, verbose):
       usearch_cmd = (USEARCH
         + " -uchime_denovo"
         + " " + f[:-6] + "_unique.fasta"
-        + " -nonchimeras" + f[:-6] + "_ncdenovo.fasta"
+        + " -nonchimeras " + f[:-6] + "_ncdenovo.fasta"
         + " -chimeras " + f[:-6] + "_chimeras.fasta")
 
       if verbose:
@@ -459,7 +460,7 @@ def blastAgainstVAR(fastafile, outputfile, perID
   if verbose:
     print "running... ", blast_cmd
 
-  check_call(blast_cmd, shell=True)
+  # check_call(blast_cmd, shell=True)
 
   #get best hists from blast
   blast_hits = {}
@@ -490,6 +491,7 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
   , total_reads_after_contaminant_filtering
   , blast_isolate_counts
   , chimeric_filt
+  , cleaned_read_file
   , verbose):
 
   ##Calculate flexbar summary statisics
@@ -532,7 +534,7 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
   #Count number of chimeric reads
   if chimeric_filt:
     chimericCounts = {}
-    for f in glob.glob("*__ncdenovo.fasta"):
+    for f in glob.glob("*_ncdenovo.fasta"):
       sample = f.split("_demultiplexTrimMerged")[0]
       chimericCounts[sample] = countReads(f)
   else:
@@ -550,6 +552,12 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
   for f in glob.glob("*_demultiplexTrimMerged_lowSupportFiltered.fasta"):
     sample = f.split("_demultiplexTrimMerged")[0]
     supportCentroids[sample] = countReads(f)
+
+  #Count number of reads remaining after contaminant filtering
+  contamFilteredCounts = Counter()
+  for h,s in FastaReader(cleaned_read_file):
+    sample = h.strip().split("sample=")[1]
+    contamFilteredCounts[sample] += 1
 
   ##write to outputfile
   with open(outputfile, 'w') as outfile:
@@ -573,7 +581,7 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
     #now write out sample specific statistics
     outfile.write(",".join(["Sample", "PreMerge", "Merged", "Discarded"
       , "Not Assembled", "Filtered", "Chimeric", "Centroids"
-      , "Centroids with support"
+      , "Centroids with support", "After contaminant filtering"
       , "3D7", "DD2", "HB3"])+"\n")
 
     for sample in pearStats:
@@ -586,6 +594,7 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
         , str(chimericCounts[sample])
         , str(centroidCounts[sample])
         , str(supportCentroids[sample])
+        , str(contamFilteredCounts[sample])
         , str(blast_isolate_counts[sample]["3D7"])
         , str(blast_isolate_counts[sample]["DD2"])
         , str(blast_isolate_counts[sample]["HB3"])
@@ -667,8 +676,8 @@ def main():
   curr_dir = os.getcwd()
   os.chdir(outputdir)
 
-  runFastQC(args.read1, args.outputdir, args.verbose)
-  runFastQC(args.read2, args.outputdir, args.verbose)
+  # runFastQC(args.read1, args.outputdir, args.verbose)
+  # runFastQC(args.read2, args.outputdir, args.verbose)
 
 
   barcodefile, pairedMIDs = convertDescToFlexBarcodes(args.desc
@@ -679,19 +688,19 @@ def main():
     , args.barcode_threshold
     , args.cpu, args.verbose)
 
-  mergePear(pairedMIDs, args.cpu, args.verbose)
+  # mergePear(pairedMIDs, args.cpu, args.verbose)
 
-  filterReads(args.filterReads, args.verbose)
+  # filterReads(args.filterReads, args.verbose)
 
-  removeLowSupportReads(args.perID, args.min_size, args.filterChimeric
-    , args.verbose)
+  # removeLowSupportReads(args.perID, args.min_size, args.filterChimeric
+  #   , args.verbose)
 
   combinedFile = os.path.basename(args.read1[:-7])+"_combinedNotClean.fasta"
-  combineReadFiles(combinedFile, args.verbose)
+  # combineReadFiles(combinedFile, args.verbose)
 
-  filterWithHMMER(combinedFile
-    , args.outputdir + os.path.basename(args.read1[:-7])
-    , args.cpu, args.verbose)
+  # filterWithHMMER(combinedFile
+  #   , args.outputdir + os.path.basename(args.read1[:-7])
+  #   , args.cpu, args.verbose)
 
   #Get contaminant filtering counts
   total_reads_before_contaminant_filtering = countReads(combinedFile)
@@ -711,6 +720,7 @@ def main():
     , total_reads_after_contaminant_filtering
     , blast_isolate_counts
     , args.filterChimeric
+    , args.outputdir + os.path.basename(args.read1[:-7]) + "_DBLa_cleaned.fasta"
     , args.verbose)
 
 
