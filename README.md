@@ -5,7 +5,7 @@ A pipeline for demultiplexing and identifying VAR DBLalpha tags in Illumina pair
 The program is written in python to run on unix systems. It requires the programs HMMER, flexbar, usearch and pear to be installed seperately. The hardcoded location of these programs need to be entered into the corresponding variables at the top of the python script.
 
 ##Considerations
-At the moment the pipeline does not attempt to deal with chimeric sequences. The impact of this is being investigated.
+The pipeline uses Uchime denovo chimeric read filtering. This has been shown to reduce errors due to chimeric reads without removing too many valid recombinant reads. The Uparse approach was also investigated but found to be overly harsh for this problem. 
 
 ##Instructions
 ```
