@@ -623,13 +623,13 @@ def main():
     , help="location of desc mapping file."
     , required=True)
 
-  parser.add_argument('--filter', dest='filterReads', action='store_true'
-    , default=False
-    , help='filter merged reads using usearch if more than 1 expected error (default=False)')
+  parser.add_argument('--NoFilter', dest='filterReads', action='store_false'
+    , default=True
+    , help='turn off filtering for merged reads using usearch if more than 1 expected error (default=True)')
 
-  parser.add_argument('--chimeric', dest='filterChimeric', action='store_true'
-    , default=False
-    , help='filter chimeric reads using uchime denovo algorithm. (default=False)')
+  parser.add_argument('--NoChimeric', dest='filterChimeric', action='store_false'
+    , default=True
+    , help='turn off chimeric filtering using uchime denovo algorithm. (default=True)')
 
   parser.add_argument('--minSize', dest='min_size', type=int, default=15
     , help="minimum support for a read to be kept. (default=15)")
