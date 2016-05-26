@@ -9,8 +9,8 @@ The pipeline uses Uchime denovo chimeric read filtering. This has been shown to 
 
 ##Instructions
 ```
-usage: cleanDBLalpha.py [-h] -o OUTPUTDIR -r READ1 -R READ2 -d DESC [--filter]
-                        [--minSize MIN_SIZE]
+usage: cleanDBLalpha.py [-h] -o OUTPUTDIR -r READ1 -R READ2 -d DESC
+                        [--NoFilter] [--NoChimeric] [--minSize MIN_SIZE]
                         [--barcodeThreshold BARCODE_THRESHOLD] [--perID PERID]
                         [--cpu CPU] [--verbose]
 
@@ -26,9 +26,11 @@ optional arguments:
   -R READ2, --read2 READ2
                         location of paired read file.
   -d DESC, --desc DESC  location of desc mapping file.
-  --filter              filter merged reads using usearch if more than 1
-                        expected error (default=False)
-  --minSize MIN_SIZE    minimum support for a read to be kept. (default=4)
+  --NoFilter            turn off filtering for merged reads using usearch if
+                        more than 1 expected error (default=True)
+  --NoChimeric          turn off chimeric filtering using uchime denovo
+                        algorithm. (default=True)
+  --minSize MIN_SIZE    minimum support for a read to be kept. (default=15)
   --barcodeThreshold BARCODE_THRESHOLD
                         number of errors allowed in a barcode/primer pair.
                         (default=0)
