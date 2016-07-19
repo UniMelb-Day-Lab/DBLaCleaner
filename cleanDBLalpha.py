@@ -6,6 +6,7 @@ import re
 from itertools import izip
 from mungo.fasta import FastaReader
 from collections import defaultdict, Counter
+import itertools
 
 PEAR = "pear"
 FLEXBAR = "/home/users/allstaff/tonkin-hill.g/DBLalpha/third_party/flexbar_v2.5_linux64/flexbar-2.5.0/flexbar"
@@ -49,6 +50,65 @@ class MyError(Exception):
     def __str__(self):
         return repr(self.value)
 
+class ParseFastQ(object):
+  """Returns a read-by-read fastQ parser analogous to file.readline()"""
+  def __init__(self,filePath,headerSymbols=['@','+']):
+    """Returns a read-by-read fastQ parser analogous to file.readline().
+    Exmpl: parser.next()
+    -OR-
+    Its an iterator so you can do:
+    for rec in parser:
+        ... do something with rec ...
+
+    rec is tuple: (seqHeader,seqStr,qualHeader,qualStr)
+    """
+    if filePath.endswith('.gz'):
+        self._file = gzip.open(filePath)
+    else:
+        self._file = open(filePath, 'rU')
+    self._currentLineNumber = 0
+    self._hdSyms = headerSymbols
+
+  def __iter__(self):
+    return self
+
+  def next(self):
+    """Reads in next element, parses, and does minimal verification.
+    Returns: tuple: (seqHeader,seqStr,qualHeader,qualStr)"""
+    # ++++ Get Next Four Lines ++++
+    elemList = []
+    for i in range(4):
+        line = self._file.readline()
+        self._currentLineNumber += 1 ## increment file position
+        if line:
+            elemList.append(line.strip('\n'))
+        else:
+            elemList.append(None)
+
+    # ++++ Check Lines For Expected Form ++++
+    trues = [bool(x) for x in elemList].count(True)
+    nones = elemList.count(None)
+    # -- Check for acceptable end of file --
+    if nones == 4:
+        raise StopIteration
+    # -- Make sure we got 4 full lines of data --
+    assert trues == 4,\
+           "** ERROR: It looks like I encountered a premature EOF or empty line.\n\
+           Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (self._currentLineNumber)
+    # -- Make sure we are in the correct "register" --
+    assert elemList[0].startswith(self._hdSyms[0]),\
+           "** ERROR: The 1st line in fastq element does not start with '%s'.\n\
+           Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (self._hdSyms[0],self._currentLineNumber)
+    assert elemList[2].startswith(self._hdSyms[1]),\
+           "** ERROR: The 3rd line in fastq element does not start with '%s'.\n\
+           Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (self._hdSyms[1],self._currentLineNumber)
+    # -- Make sure the seq line and qual line have equal lengths --
+    assert len(elemList[1]) == len(elemList[3]), "** ERROR: The length of Sequence data and Quality data of the last record aren't equal.\n\
+           Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (self._currentLineNumber)
+
+    # ++++ Return fatsQ data as tuple ++++
+    return tuple(elemList)
+
 def isValidBarcode(barcode):
   for l in barcode:
     if l not in ["A","C","G","T","N"]:
@@ -58,22 +118,20 @@ def isValidBarcode(barcode):
 def catFiles(filenames, outputfile):
   with open(outputfile, 'w') as outfile:
       for fname in filenames:
-          with open(fname, 'r') as infile:
+          with open(fname, 'rU') as infile:
               for line in infile:
                   outfile.write(line)
 
 def checkFastqPaired(read1file, read2file, verbose):
   count = 0
-  with open(read1file, 'r') as read1:
-    with open(read2file, 'r') as read2:
-      for r1, r2 in izip(read1, read2):
-        if r1[0]=="@" or r2[0]=="@":
-          count += 1
-          if r1.split()[0]!=r2.split()[0]:
-            MyError("Read file mismatch")
+  for read1, read2 in izip(ParseFastQ(read1file), ParseFastQ(read2file)):
+    count += 1
+    if read1[0].split()[0]!=read2[0].split()[0]:
+      print read1[0].split()[0], read2[0].split()[0]
+      raise MyError("Read file mismatch")
 
   if count<1:
-    MyError("Empty read files!")
+    raise MyError("Empty read files!")
 
   if verbose:
     print "Checked ", count, " read pairs."
@@ -98,7 +156,7 @@ def convertDescToFlexBarcodes(descfile, outputfile, verbose):
   pairedMIDs = {}
   barcodes = set()
 
-  with open(descfile, 'r') as infile:
+  with open(descfile, 'rU') as infile:
     with open(outputfile, 'w') as outfile:
       for line in infile:
 
@@ -110,16 +168,16 @@ def convertDescToFlexBarcodes(descfile, outputfile, verbose):
         elif isValidBarcode(line[1]):
           b1 = line[1]
         else:
-          MyError("Invalid barcode in desc file")
+          raise MyError("Invalid barcode in desc file")
         if line[2] in MIDIC:
           b2 = MIDIC[line[2]]
         elif isValidBarcode(line[2]):
           b2 = line[2]
         else:
-          MyError("Invalid barcode in desc file")
+          raise MyError("Invalid barcode in desc file")
 
         if ((line[1], line[2]) in pairedMIDs) or ((line[2], line[1]) in pairedMIDs):
-          MyError("Duplicated MID id pair.")
+          raise MyError("Duplicated MID id pair.")
 
         pairedMIDs[(line[1], line[2])] = line[0]
 
@@ -275,6 +333,9 @@ def filterReads(filterReads, verbose):
 def removeLowSupportReads(per_id, min_size, chimeric_filt, verbose):
 
   for f in glob.glob("*_demultiplexTrimMerged.fasta"):
+    #skip if empty
+    if countReads(f)==0:  continue
+
     #intially remove singletons
     usearch_cmd = (USEARCH
       + " -derep_prefix"
@@ -287,6 +348,9 @@ def removeLowSupportReads(per_id, min_size, chimeric_filt, verbose):
       print "running... ", usearch_cmd
 
     check_call(usearch_cmd, shell=True)
+
+    #skip if empty
+    if countReads(f[:-6] + "_unique.fasta")==0:  continue
 
     #optionally filter out chimeric reads
     if chimeric_filt:
@@ -380,7 +444,7 @@ def filterWithHMMER(inputfile, prefix, cpu, verbose):
 
   #Now run through and get DBLalpha seqs
   keep = set()
-  with open("hmmerDBLalphaSearch.txt", 'r') as infile:
+  with open("hmmerDBLalphaSearch.txt", 'rU') as infile:
     for line in infile:
       if line[0]=="#": continue
       keep.add(line.split()[0])
@@ -401,7 +465,7 @@ def countReads(fastafile):
 
 def readPearLog(filename):
   pearResults = {}
-  with open(filename, 'r') as infile:
+  with open(filename, 'rU') as infile:
     for line in infile:
       if "Assembled reads ..." in line:
         pearResults["total"] = int(line.split()[5].replace(",",""))
@@ -412,13 +476,13 @@ def readPearLog(filename):
         pearResults["not_assembled"] = int(line.split()[4].replace(",",""))
 
   if len(pearResults.keys())!=4:
-    MyError("Problem reading in Pear log file: " + filename)
+    raise MyError("Problem reading in Pear log file: " + filename)
 
   return pearResults
 
 def readFlexBarLog(filename):
   flexbarResults = {}
-  with open(filename, 'r') as infile:
+  with open(filename, 'rU') as infile:
     AtStats = False
     for line in infile:
       line = line.strip()
@@ -440,7 +504,7 @@ def readFlexBarLog(filename):
         infile.next()
 
   if len(flexbarResults.keys())!=6:
-    MyError("Problem reading flexbar log: " + filename)
+    raise MyError("Problem reading flexbar log: " + filename)
 
   return flexbarResults
 
@@ -464,7 +528,7 @@ def blastAgainstVAR(fastafile, outputfile, perID
 
   #get best hists from blast
   blast_hits = {}
-  with open(outputfile, 'r') as infile:
+  with open(outputfile, 'rU') as infile:
     for line in infile:
       line = line.strip().split()
       q = line[0]
@@ -533,7 +597,7 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
 
   #Count number of chimeric reads
   if chimeric_filt:
-    chimericCounts = {}
+    chimericCounts = Counter()
     for f in glob.glob("*_ncdenovo.fasta"):
       sample = f.split("_demultiplexTrimMerged")[0]
       chimericCounts[sample] = countReads(f)
@@ -542,13 +606,13 @@ def calculateSummaryStatistics(pairedMIDs, outputfile, total_reads
       chimericCounts[sample] = 0
 
   #Count number of centroids
-  centroidCounts = {}
+  centroidCounts = Counter()
   for f in glob.glob("*_demultiplexTrimMerged_centroids.fasta"):
     sample = f.split("_demultiplexTrimMerged")[0]
     centroidCounts[sample] = countReads(f)
 
   #Count number of centroids with sufficient support
-  supportCentroids = {}
+  supportCentroids = Counter()
   for f in glob.glob("*_demultiplexTrimMerged_lowSupportFiltered.fasta"):
     sample = f.split("_demultiplexTrimMerged")[0]
     supportCentroids[sample] = countReads(f)
