@@ -68,8 +68,10 @@ class ParseFastQ(object):
         self._file = open(filePath, 'rU')
     self._currentLineNumber = 0
     self._hdSyms = headerSymbols
+
   def __iter__(self):
     return self
+
   def next(self):
     """Reads in next element, parses, and does minimal verification.
     Returns: tuple: (seqHeader,seqStr,qualHeader,qualStr)"""
@@ -82,6 +84,7 @@ class ParseFastQ(object):
             elemList.append(line.strip('\n'))
         else:
             elemList.append(None)
+
     # ++++ Check Lines For Expected Form ++++
     trues = [bool(x) for x in elemList].count(True)
     nones = elemList.count(None)
@@ -102,6 +105,7 @@ class ParseFastQ(object):
     # -- Make sure the seq line and qual line have equal lengths --
     assert len(elemList[1]) == len(elemList[3]), "** ERROR: The length of Sequence data and Quality data of the last record aren't equal.\n\
            Please check FastQ file near line number %s (plus or minus ~4 lines) and try again**" % (self._currentLineNumber)
+
     # ++++ Return fatsQ data as tuple ++++
     return tuple(elemList)
 
