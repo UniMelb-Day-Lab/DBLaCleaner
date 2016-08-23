@@ -716,7 +716,7 @@ def main():
 
   parser.add_argument('--barcodeThreshold', dest='barcode_threshold', type=float
     , default=0
-    , help="number of errors allowed in a barcode/primer pair. (default=1)")
+    , help="number of errors allowed in a barcode/primer pair. (default=0)")
 
   parser.add_argument('--perID', dest='perID', type=float, default=0.96
     , help="percentage ID threshold. (default=0.96)")
