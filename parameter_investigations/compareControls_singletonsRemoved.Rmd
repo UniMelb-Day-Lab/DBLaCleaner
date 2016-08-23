@@ -1,0 +1,305 @@
+---
+title: "Compare controls"
+author: "Gerry Tonkin-Hill"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    fig_width: 12
+    fig_height: 8
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      echo=TRUE, warning=FALSE, message=FALSE,
+                      tidy=TRUE)
+```
+
+
+##Different types of chimeric filtering performed
+Three types of chimeric filtering were preformed using usearch version 8.1.1861_i86linux32.
+
+* uchime_ref
+* uchime_denovo
+* cluster_otus
+
+```
+for f in *.fasta;
+do
+
+mkdir chimeric_filtered_uchime_ref
+usearch -uchime_ref $f -db $f -self -nonchimeras "./chimeric_filtered_uchime_ref/${f}.ncref.fasta" -strand plus
+
+mkdir chimeric_filtered_uchime_denovo
+usearch -derep_prefix $f -fastaout "./chimeric_filtered_uchime_denovo/${f}_amplicons.fasta" -sizeout
+usearch -uchime_denovo "./chimeric_filtered_uchime_denovo/${f}_amplicons.fasta" -nonchimeras "./chimeric_filtered_uchime_denovo/${f}.ncdenovo.fasta"
+
+mkdir chimeric_filtered_otu_search
+usearch -derep_fulllength $f -sizeout -fastaout "./chimeric_filtered_otu_search/${f}_uniques.fa"
+usearch -cluster_otus "./chimeric_filtered_otu_search/${f}_uniques.fa" -minsize 2 -otus "./chimeric_filtered_otu_search/${f}_otus.fa"
+
+done
+```
+
+#Otu table generation
+These have been clustered at 96% identity after first filtering out contaminants using HMMER3 with a DBLalpha model at a score threshold of 80.
+Usearch version 8.1.1831 was used.
+
+```
+hmmsearch -o /dev/null --domT 80 --domtblout hmmerDBLalphaSearch.txt --cpu 25 atag.hmm DD2_chimericCombined_renamed.fasta
+usearch8.1.1831 -derep_prefix DD2_chimericCombined_renamed_DBLa_cleaned.fasta -fastaout DD2_chimericCombined_renamed_DBLa_cleaned_unique.fasta -sizeout
+usearch8.1.1831 -cluster_fast DD2_chimericCombined_renamed_DBLa_cleaned_unique.fasta -centroids DD2_chimericCombined_renamed_DBLa_cleaned_centroids.fasta -sort size -id 0.96
+usearch8.1.1831 -usearch_global DD2_chimericCombined_renamed_DBLa_cleaned.fasta -db DD2_chimericCombined_renamed_DBLa_cleaned_centroids.fasta -strand plus -id 0.96 -dbmatched DD2_chimericCombined_renamed_DBLa_cleaned_centroids_withSize.fasta -sizeout -otutabout DD2_chimericCombined_renamed_DBLa_cleaned_otutab.txt
+```
+
+
+```{r}
+#Load libraries
+
+library(ggplot2)
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(scales)
+library(stringr)
+
+wd = "/home/users/allstaff/tonkin-hill.g/DBLalpha/verificationOfData/controls/supp_material/clustered/"
+```
+
+#Load otu table data
+The otu output option of usearch_global is taken as input.
+```{r}
+setwd(wd)
+
+otus_3D7 <- fread("combined_3D7_SingletonsFiltered_id0.96_otutab.txt", data.table=FALSE)
+otus_DD2 <- fread("combined_[P1]DD2.MID_SingletonsFiltered_id0.96_otutab.txt", data.table=FALSE)
+otus_HB3 <- fread("combined_[P1]HB3.MID_SingletonsFiltered_id0.96_otutab.txt", data.table=FALSE)
+otus_DD2xHB3 <- fread("combined_HB3xDD2__SingletonsFiltered_id0.96_otutab.txt", data.table=FALSE)
+
+
+```
+
+#Identify conserved types
+First conserved types are identified in the set that has had no chimeric filtering. We identify a conserved type if it has been seen in at least 2 runs of the same isolate sample with an expression of at least 15 reads clustered at 96% identity.
+
+```{r}
+MIN_RUNS <- 3
+
+getConservedTypes <- function(otu_df, min_reads){
+  chimericCols <- grepl(".*ncdenovo.*", colnames(otu_df)) | grepl(".*ncref.*", colnames(otu_df)) | grepl(".*otuclust.*", colnames(otu_df))
+  nofiltering_otus <-  otu_df[,!chimericCols]
+  nofiltering_otus <- data.matrix(nofiltering_otus[,2:ncol(nofiltering_otus)])
+  rownames(nofiltering_otus) <- otu_df$`#OTU ID`
+  nofiltering_otus[nofiltering_otus<min_reads] <- 0
+  nofiltering_otus[nofiltering_otus>0] <- 1
+
+  conserved_types <- rownames(nofiltering_otus)[rowSums(nofiltering_otus)>=MIN_RUNS]
+  return(conserved_types)
+}
+```
+
+#Investigate the impact of read cutoff
+The plot below indicates that there are a high number of OTUs with low support. A cutoff of 15 reads appears to be suitable, with the number of OTUs remaining fairly stable for higher cutoffs.
+```{r}
+read_cutoff_df <- data.frame()
+for (min_reads in seq(2,50,by=1)){
+  conserved_3D7 <- length(getConservedTypes(otus_3D7, min_reads))
+  conserved_DD2 <- length(getConservedTypes(otus_DD2, min_reads))
+  conserved_HB3 <- length(getConservedTypes(otus_HB3, min_reads))
+  conserved_DD2xHB3 <- length(getConservedTypes(otus_DD2xHB3, min_reads))
+  temp_df <- data.frame(read_cutoff=min_reads, conserved_3D7=conserved_3D7, conserved_DD2=conserved_DD2
+                        , conserved_HB3=conserved_HB3, conserved_DD2xHB3=conserved_DD2xHB3)
+  read_cutoff_df <- rbind(read_cutoff_df, temp_df)
+}
+
+read_cutoff_melt_df <- melt(read_cutoff_df, id.vars="read_cutoff", variable.name="Isolate")
+gg <- ggplot(read_cutoff_melt_df, aes(x=read_cutoff, y=value)) + geom_bar(stat="identity")
+gg <- gg + facet_wrap(~Isolate, ncol=1)
+gg <- gg + theme_bw() + scale_x_continuous(breaks=seq(2,50,1))# + scale_y_sqrt()
+gg
+
+gg + xlim(10,50)
+```
+
+Another plot gives support to the 15 read cutoff. Here we show the number of OTUs for differing levels of support. Again the high number of OTUs with low support can be seen  with a cutoff of 15 appearing appropriate. This plot also indicates that the remaining OTUs have a wide variety of read support.
+```{r}
+setwd(wd)
+
+getOtuReadCounts <- function(otu_df){
+  chimericCols <- grepl(".*ncdenovo.*", colnames(otu_df)) | grepl(".*ncref.*", colnames(otu_df)) | grepl(".*otuclust.*", colnames(otu_df))
+  nofiltering_otus <-  otu_df[,!chimericCols]
+  nofiltering_otus <- data.matrix(nofiltering_otus[,2:ncol(nofiltering_otus)])
+  rownames(nofiltering_otus) <- otu_df$`#OTU ID`
+  
+  return(apply(nofiltering_otus, 1, median))
+}
+
+otus_3D7_noFilter <- getOtuReadCounts(otus_3D7)
+otus_HB3_noFilter <- getOtuReadCounts(otus_HB3)
+otus_DD2_noFilter <- getOtuReadCounts(otus_DD2)
+otus_DD2xHB3_noFilter <- getOtuReadCounts(otus_DD2xHB3)
+
+
+combinedMedianCounts <- data.frame(Otus=c(names(otus_3D7_noFilter), names(otus_HB3_noFilter), names(otus_DD2_noFilter), names(otus_DD2xHB3_noFilter)), MedianCount=c(otus_3D7_noFilter, otus_HB3_noFilter, otus_DD2_noFilter, otus_DD2xHB3_noFilter), Isolate=c(rep("3D7", length(otus_3D7_noFilter)), rep("HB3", length(otus_HB3_noFilter)), rep("DD2", length(otus_DD2_noFilter)), rep("DD2xHB3", length(otus_DD2xHB3_noFilter))))
+
+gg <- ggplot(combinedMedianCounts, aes(x=factor(MedianCount)))
+gg <- gg + geom_bar()
+gg <- gg + facet_wrap(~Isolate, ncol=1)
+gg <- gg + scale_y_sqrt()
+gg <- gg + theme_bw() + theme(axis.text.x = element_text(size=7,angle = 90, hjust = 1))
+gg
+```
+
+The plot below indicates the number of conserved types found for each isolate with a read cutoff of 15, clustered at 96% identity. 
+```{r}
+MIN_READS = 15
+
+conserved_3D7 <- getConservedTypes(otus_3D7, MIN_READS)
+conserved_DD2 <- getConservedTypes(otus_DD2, MIN_READS)
+conserved_HB3 <- getConservedTypes(otus_HB3, MIN_READS)
+conserved_DD2xHB3 <- getConservedTypes(otus_DD2xHB3, MIN_READS)
+
+barplot(unlist(lapply(list(conserved_3D7, conserved_DD2, conserved_HB3, conserved_DD2xHB3), length))
+        , names.arg=c("3D7", "DD2", "HB3", "DD2xHB3"))
+unlist(lapply(list(conserved_3D7, conserved_DD2, conserved_HB3, conserved_DD2xHB3), length))
+```
+
+
+#Investigate the number of conserved types found after denovo chimeric filtering
+Here we investigate the different chimeric filtering options of usearch. Specifically uchime denovo and reference as well as the chimeric filtering implemented in Uparse. 
+
+```
+for f in *.fasta;
+do
+
+mkdir chimeric_filtered_uchime_ref
+usearch -uchime_ref $f -db $f -self -nonchimeras "./chimeric_filtered_uchime_ref/${f}.ncref.fasta" -strand plus
+
+mkdir chimeric_filtered_uchime_denovo
+usearch -derep_prefix $f -fastaout "./chimeric_filtered_uchime_denovo/${f}_amplicons.fasta" -sizeout
+usearch -uchime_denovo "./chimeric_filtered_uchime_denovo/${f}_amplicons.fasta" -nonchimeras "./chimeric_filtered_uchime_denovo/${f}.ncdenovo.fasta"
+
+mkdir chimeric_filtered_otu_search
+usearch -derep_fulllength $f -sizeout -fastaout "./chimeric_filtered_otu_search/${f}_uniques.fa"
+usearch -cluster_otus "./chimeric_filtered_otu_search/${f}_uniques.fa" -minsize 4 -otus "./chimeric_filtered_otu_search/${f}_otus.fa" ‑uparseout "./chimeric_filtered_otu_search/${f}_uparseOut.txt"
+
+done
+```
+
+The plots below indicate the number of OTUs identified by each method in each of the runs. The no filter option is obtained by counting OTUs only if they appear in two or more separate runs. The error bars at the top of each column indicate how many OTUs were found only in that run and not filtered out. Thus a good method would reduce this error without losing valid OTUs identified by the no filtering option. The number inside the bars indicates the number of OTUs in that run/filter that map to the reference database for the respective isolate.
+
+**NOTE:** For low read threshold the number of OTUs found in multiple runs increases and is variable between runs. This indicates that there are either some very low level contaminant VAR sequences that only occasionally appear OR probably more likely there are certain chimeric sequences that are more predisposed to occurring. A version of this document with a read cutoff of 4 is available that better illustrates this phenomenon.
+
+```{r}
+
+getChimericStats <- function(otu_df, conserved){
+  
+  chimericCols <- grepl(".*ncdenovo.*", colnames(otu_df)) | grepl(".*ncref.*", colnames(otu_df)) | grepl(".*otuclust.*", colnames(otu_df))
+  chimericCols[1]<-TRUE
+  
+  #filter out otus without enough support
+  reads_with_support <- rowSums(otu_df[,!chimericCols])>MIN_READS
+  otu_df <- otu_df[reads_with_support, ]
+  
+  #convert to binary matrix 
+  otu_matrix <- data.matrix(otu_df[,2:ncol(otu_df)])
+  rownames(otu_matrix) <- otu_df$`#OTU ID`
+  otu_matrix[otu_matrix>0] <- 1
+  summary_df <- str_split_fixed(colnames(otu_matrix),"_",2)
+  summary_df[,2][summary_df[,2]==""] <- "No Filter"
+  summary_df <- data.frame(summary_df)
+  colnames(summary_df) <- c("Pool", "Filter")
+  summary_df$`No Filtering` <- colSums(otu_matrix)
+  summary_df$Filtered <- colSums(otu_matrix[rownames(otu_matrix) %in% conserved, ])
+
+  dodge <- position_dodge(width=0.9)
+  gg <- ggplot(summary_df, aes(x=factor(Pool), y=Filtered, fill=factor(Filter)))
+  gg <- gg + geom_bar(stat="identity", position=dodge)
+  gg <- gg + geom_errorbar(aes(ymax = `No Filtering`, ymin=Filtered), position=dodge, width=0.25)
+  gg <- gg + theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  gg <- gg + scale_y_continuous(breaks=pretty_breaks(20))
+  gg <- gg + labs(fill = "Filtering")
+  gg <- gg + xlab("Pool") + ylab("Conserved OTU count")
+  gg
+  
+  }
+```
+
+##3D7
+```{r}
+getChimericStats(otus_3D7, conserved_3D7)
+```
+
+##DD2
+```{r}
+getChimericStats(otus_DD2, conserved_DD2)
+```
+
+##HB3
+```{r}
+getChimericStats(otus_HB3, conserved_HB3)
+```
+
+##DD2xHB3
+```{r}
+getChimericStats(otus_DD2xHB3, conserved_DD2xHB3)
+```
+
+#Impact of clustering identity threshold
+We would now like to investigate the choice of clustering identity threshold. The usearch manual suggests 97% identity which is generally considered the standard for OTU analysis.
+Previously Barry et al have suggested a threshold of 96%. There are also numerous other papers that use a variety of other thresholds. It appears that both 96% and 97% give similar results and that higher than 
+
+```{r}
+setwd(wd)
+
+getNumberConservedOtus <- function(filename, min_reads){
+  otus_df <- fread(filename, data.table=FALSE)
+  id <- gsub(".*_id", "", filename)
+  id <- gsub("_otutab.txt", "", id)
+  data.frame(ID=as.numeric(id), NumOtus=length(getConservedTypes(otus_df, min_reads)), cutoff=min_reads)
+}
+
+getOtuDistDF <- function(files){
+  ids <- data.frame()
+  for (f in files){
+    ids <- rbind(ids, getNumberConservedOtus(f, 4))
+    ids <- rbind(ids, getNumberConservedOtus(f, 15))
+  }
+  ids[order(ids$ID),]
+}
+
+
+otuCounts_3D7 <- getOtuDistDF(Sys.glob("./combined_3D7_SingletonsFiltered_id*_otutab.txt"))
+otuCounts_DD2 <- getOtuDistDF(Sys.glob("./*DD2.MID_SingletonsFiltered_id*_otutab.txt"))
+otuCounts_HB3 <- getOtuDistDF(Sys.glob("./*HB3.MID_SingletonsFiltered_id*_otutab.txt"))
+otuCounts_DD2xHB3 <- getOtuDistDF(Sys.glob("./combined_HB3xDD2__SingletonsFiltered_id*_otutab.txt"))
+```
+
+##3D7
+```{r}
+gg <- ggplot(otuCounts_3D7, aes(x=factor(ID), y=NumOtus)) + geom_bar(stat="identity")
+gg <- gg + facet_wrap(~cutoff, ncol = 1)
+gg
+```
+
+##DD2
+```{r}
+gg <- ggplot(otuCounts_DD2, aes(x=factor(ID), y=NumOtus)) + geom_bar(stat="identity")
+gg <- gg + facet_wrap(~cutoff, ncol = 1)
+gg
+```
+
+##HB3
+```{r}
+gg <- ggplot(otuCounts_HB3, aes(x=factor(ID), y=NumOtus)) + geom_bar(stat="identity")
+gg <- gg + facet_wrap(~cutoff, ncol = 1)
+gg
+```
+
+##DD2xHB3
+```{r}
+gg <- ggplot(otuCounts_DD2xHB3, aes(x=factor(ID), y=NumOtus)) + geom_bar(stat="identity")
+gg <- gg + facet_wrap(~cutoff, ncol = 1)
+gg
+```
+

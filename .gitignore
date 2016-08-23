@@ -1,0 +1,6 @@
+# Untracked files:
+*.fasta
+*.fa
+*.fas
+*.pyc
+*_uparseOut.txt
