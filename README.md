@@ -7,6 +7,8 @@ The program is written in python to run on unix systems. It requires the program
 ##Considerations
 The pipeline uses Uchime denovo chimeric read filtering. This has been shown to reduce errors due to chimeric reads without removing too many valid recombinant reads. The Uparse approach was also investigated but found to be overly harsh for this problem. 
 
+For a more detailed description of the pipeline and the reasons for different paramter choices please consult the google document. The graphs for this document can be re-created using the Rmarkdown code located in the `parameter_investigations` folder of this repository.
+
 ##Instructions
 ```
 usage: cleanDBLalpha.py [-h] -o OUTPUTDIR -r READ1 -R READ2 -d DESC
