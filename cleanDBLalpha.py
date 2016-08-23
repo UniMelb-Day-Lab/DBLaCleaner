@@ -715,7 +715,7 @@ def main():
     , help="minimum support for a read to be kept. (default=15)")
 
   parser.add_argument('--barcodeThreshold', dest='barcode_threshold', type=float
-    , default=0.5
+    , default=0
     , help="number of errors allowed in a barcode/primer pair. (default=1)")
 
   parser.add_argument('--perID', dest='perID', type=float, default=0.96
