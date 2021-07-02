@@ -1,15 +1,15 @@
 # DBLaCleaner
 A pipeline for demultiplexing and identifying VAR DBLalpha tags in Illumina paired end data. The pipeline relies on HMMER, flexbar, usearch and pear software programs. It outputs a number of report statistics as well as a fasta file of DBLalpha sequences along with a corresponding contaminant fasta file.
 
-##Installation
+## Installation
 The program is written in python to run on unix systems. It requires the programs HMMER, flexbar, usearch and pear to be installed seperately. The hardcoded location of these programs need to be entered into the corresponding variables at the top of the python script.
 
-##Considerations
+## Considerations
 The pipeline uses Uchime denovo chimeric read filtering. This has been shown to reduce errors due to chimeric reads without removing too many valid recombinant reads. The Uparse approach was also investigated but found to be overly harsh for this problem. 
 
 For a more detailed description of the pipeline and the reasons for different paramter choices please consult the google document. The graphs for this document can be re-created using the Rmarkdown code located in the `parameter_investigations` folder of this repository.
 
-##Instructions
+## Instructions
 ```
 usage: cleanDBLalpha.py [-h] -o OUTPUTDIR -r READ1 -R READ2 -d DESC
                         [--NoFilter] [--NoChimeric] [--minSize MIN_SIZE]
@@ -40,7 +40,7 @@ optional arguments:
   --cpu CPU             number of cpus to use. (default=1)
   --verbose             print verbose output (default=False)
 ```
-##Generating summary report
+## Generating summary report
 To generate a nice summary report of the cleaning run a Rmarkdown files is provided. At the moment it can be compiled using the command below assuming R is installed along with the R libraries `data.table`, `ggplot2`, `knitr` and `stringr`. Hopefully this will be made a bit easier in the future.
 
 ```
