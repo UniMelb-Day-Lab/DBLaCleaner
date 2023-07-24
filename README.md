@@ -11,16 +11,16 @@ Use cleanDBLalpha.noRevMID.py if only the forward primer is barcoded (with a uni
 ## Description/mapping file format (tab-separated)
 
 If both primers are barcoded:<br />
-#ID&emspAF-MID	BR-MID<br />
-Sample_1	1	1<br />
-Sample_2	2	2<br />
-Sample_3	3	3<br />
+#ID    AF-MID    BR-MID<br />
+Sample_1    1    1<br />
+Sample_2    2    2<br />
+Sample_3    3    3<br />
 
 If only forward primer is barcoded:<br />
-#ID	AF-MID	BR-MID<br />
-Sample_1	1	0<br />
-Sample_2	2	0<br />
-Sample_3	3	0<br />
+#ID    AF-MID    BR-MID<br />
+Sample_1    1    0<br />
+Sample_2    2    0<br />
+Sample_3    3    0<br />
 
 ## Considerations
 The pipeline uses Uchime denovo chimeric read filtering. This has been shown to reduce errors due to chimeric reads without removing too many valid recombinant reads. The Uparse approach was also investigated but found to be overly harsh for this problem. 
