@@ -8,15 +8,15 @@ The program is written in python to run on unix systems. It requires the program
 Use cleanDBLalpha.py if both primers are barcoded<br />
 Use cleanDBLalpha.noRevMID.py if only the forward primer is barcoded (with a universal reverse unbarcoded primer)
 
-## Description / mapping file format (tab-separated)
+## Description/mapping file format (tab-separated)
 
-If both primers are barcoded:
+If both primers are barcoded:<br />
 #ID	AF-MID	BR-MID<br />
 Sample_1	1	1<br />
 Sample_2	2	2<br />
 Sample_3	3	3<br />
 
-If only forward primer is barcoded:
+If only forward primer is barcoded:<br />
 #ID	AF-MID	BR-MID<br />
 Sample_1	1	0<br />
 Sample_2	2	0<br />
