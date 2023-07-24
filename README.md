@@ -11,7 +11,7 @@ Use cleanDBLalpha.noRevMID.py if only the forward primer is barcoded (with a uni
 ## Description/mapping file format (tab-separated)
 
 If both primers are barcoded:<br />
-#ID	AF-MID	BR-MID<br />
+#ID&emspAF-MID	BR-MID<br />
 Sample_1	1	1<br />
 Sample_2	2	2<br />
 Sample_3	3	3<br />
