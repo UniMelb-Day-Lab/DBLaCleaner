@@ -5,6 +5,22 @@ A pipeline for demultiplexing and identifying VAR DBLalpha tags in Illumina pair
 The program is written in python to run on unix systems. It requires the programs HMMER, flexbar, usearch and pear to be installed seperately. The hardcoded location of these programs need to be entered into the corresponding variables at the top of the python script.
 
 ## Versions
+Use cleanDBLalpha.py if both primers are barcoded
+Use cleanDBLalpha.noRevMID.py if only the forward primer is barcoded (with a universal reverse unbarcoded primer)
+
+## Description / mapping file format (tab-separated)
+
+If both primers are barcoded:
+#ID	AF-MID	BR-MID
+Sample_1	1	1
+Sample_2	2	2
+Sample_3	3	3
+
+If only forward primer is barcoded:
+#ID	AF-MID	BR-MID
+Sample_1	1	0
+Sample_2	2	0
+Sample_3	3	0
 
 ## Considerations
 The pipeline uses Uchime denovo chimeric read filtering. This has been shown to reduce errors due to chimeric reads without removing too many valid recombinant reads. The Uparse approach was also investigated but found to be overly harsh for this problem. 
