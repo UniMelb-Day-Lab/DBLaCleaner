@@ -5,8 +5,8 @@ A pipeline for demultiplexing and identifying VAR DBLalpha tags in Illumina pair
 The program is written in python to run on unix systems. It requires the programs HMMER, flexbar, usearch and pear to be installed seperately. The hardcoded location of these programs need to be entered into the corresponding variables at the top of the python script.
 
 ## Versions
-Use cleanDBLalpha.py if both primers are barcoded<br />
-Use cleanDBLalpha.noRevMID.py if only the forward primer is barcoded (with a universal reverse unbarcoded primer)
+Use V1.0 (cleanDBLalpha.py) if both primers are barcoded<br />
+Use V2.0 (cleanDBLalpha.noRevMID.py) if only the forward primer is barcoded (with a universal reverse unbarcoded primer)
 
 ## Description/mapping file format (tab-separated)
 
