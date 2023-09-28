@@ -65,7 +65,7 @@ To generate a nice summary report of the cleaning run a Rmarkdown files is provi
 R -e 'rmarkdown::render("/path/to/summaryReport.Rmd", params = list(summary_file = "/path/to/summaryStatistics.log"), output_file="/output/path/summaryStatistics.html")'
 ```
 
-##Release notes
+## Release notes
 DBLaCleaner v1.0 (7th August 2023) - added 'cleanDBLalpha.noRevMID.py' to process amplicons with only one barcoded forward primer (and a universal reverse unbarcoded primer)
 DBLaCleaner v1.1 (28th September 2023) - codes of 'cleanDBLalpha.py' and 'cleanDBLalpha.noRevMID.py' were modified to raise error and stop run when 'temp_files' folder already exists
 
