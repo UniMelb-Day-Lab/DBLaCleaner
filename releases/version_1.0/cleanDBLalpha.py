@@ -1,3 +1,5 @@
+## version 1.0
+
 import sys, os
 import argparse
 from subprocess import check_call

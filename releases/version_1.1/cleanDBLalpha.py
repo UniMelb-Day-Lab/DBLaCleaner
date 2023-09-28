@@ -1,3 +1,5 @@
+## version 1.2 (28th September 2023)
+
 import sys, os
 import argparse
 from subprocess import check_call
@@ -11,16 +13,17 @@ import itertools
 PEAR = "/home/users/allstaff/tonkin-hill.g/DBLaCleaner/third_party/pear-0.9.10-bin-64/pear-0.9.10-bin-64"
 FLEXBAR = "/home/users/allstaff/tonkin-hill.g/DBLalpha/third_party/flexbar_v2.5_linux64/flexbar-2.5.0/flexbar"
 USEARCH = "/home/users/allstaff/tonkin-hill.g/DBLalpha/third_party/usearch8.1.1831"
-HMMERSEARCH = "hmmsearch" # Version 3.1b2
+HMMERSEARCH = "hmmsearch"
 DBLA_HMM = "/home/users/allstaff/tonkin-hill.g/DBLalpha/data/Rask_ref/atag.hmm"
 FASTQC = "fastqc"
-BLAST = "blastn" # Version 2.6.0+
+BLAST = "blastn"
 VAR_BLAST_DB = "/home/users/allstaff/tonkin-hill.g/DBLaCleaner/data/blastDB_rask_DBLa_3D7_DD2_HB3"
+
 
 FORWARD_PRIMER = "GNNNGNAGTTTNGC"
 REVERSE_PRIMER = "NNCCANTCNTNNNACCA"
 # MID1-153
-MIDIC = {"0":"", "1":"ACGAGTGCGT","40":"TACGCTGTCT","2":"ACGCTCGACA","41":"TAGTGTAGAT","3":"AGACGCACTC","42":"TCGATCACGT","4":"AGCACTGTAG","43":"TCGCACTAGT","5":"ATCAGACACG","44":"TCTAGCGACT","6":"ATATCGCGAG","45":"TCTATACTAT","7":"CGTGTCTCTA","46":"TGACGTATGT","8":"CTCGCGTGTC","47":"TGTGAGTAGT","9":"TAGTATCAGC","10":"TCTCTATGCG","48":"ACAGTATATA","11":"TGATACGTCT","49":"ACGCGATCGA","12":"TACTGAGCTA","13":"CATAGTAGTG","50":"ACTAGCAGTA","14":"CGAGAGATAC","51":"AGCTCACGTA","15":"ATACGACGTA","52":"AGTATACATA","16":"TCACGTACTA","53":"AGTCGAGAGA","17":"CGTCTAGTAC","54":"AGTGCTACGA","18":"TCTACGTAGC","55":"CGATCGTATA","19":"TGTACTACTC","56":"CGCAGTACGA","20":"ACGACTACAG","57":"CGCGTATACA","21":"CGTAGACTAG","58":"CGTACAGTCA","22":"TACGAGTATG","59":"CGTACTCAGA","23":"TACTCTCGTG","60":"CTACGCTCTA","24":"TAGAGACGAG","61":"CTATAGCGTA","25":"TCGTCGCTCG","62":"TACGTCATCA","26":"ACATACGCGT","63":"TAGTCGCATA","27":"ACGCGAGTAT","64":"TATATATACA","28":"ACTACTATGT","65":"TATGCTAGTA","29":"ACTGTACAGT","66":"TCACGCGAGA","30":"AGACTATACT","67":"TCGATAGTGA","31":"AGCGTCGTCT","68":"TCGCTGCGTA","32":"AGTACGCTAT","69":"TCTGACGTCA","33":"ATAGAGTACT","70":"TGAGTCAGTA","34":"CACGCTACGT","71":"TGTAGTGTGA","35":"CAGTAGACGT","72":"TGTCACACGA","36":"CGACGTGACT","73":"TGTCGTCGCA","37":"TACACACACT","74":"ACACATACGC","38":"TACACGTGAT","75":"ACAGTCGTGC","39":"TACAGATCGT","76":"ACATGACGAC","77":"ACGACAGCTC","78":"ACGTCTCATC","79":"ACTCATCTAC","80":"ACTCGCGCAC","81":"AGAGCGTCAC","82":"AGCGACTAGC","83":"AGTAGTGATC","84":"AGTGACACAC","85":"AGTGTATGTC","86":"ATAGATAGAC","87":"ATATAGTCGC","88":"ATCTACTGAC","89":"CACGTAGATC","90":"CACGTGTCGC","91":"CATACTCTAC","92":"CGACACTATC","93":"CGAGACGCGC","94":"CGTATGCGAC","95":"CGTCGATCTC","96":"CTACGACTGC","97":"CTAGTCACTC","98":"CTCTACGCTC","99":"CTGTACATAC","100":"TAGACTGCAC","101":"TAGCGCGCGC","102":"TAGCTCTATC","103":"TATAGACATC","104":"TATGATACGC","105":"TCACTCATAC","106":"TCATCGAGTC","107":"TCGAGCTCTC","108":"TCGCAGACAC","109":"TCTGTCTCGC","110":"TGAGTGACGC","111":"TGATGTGTAC","112":"TGCTATAGAC","113":"TGCTCGCTAC","114":"ACGTGCAGCG","115":"ACTCACAGAG","116":"AGACTCAGCG","117":"AGAGAGTGTG","118":"AGCTATCGCG","119":"AGTCTGACTG","120":"AGTGAGCTCG","121":"ATAGCTCTCG","122":"ATCACGTGCG","123":"ATCGTAGCAG","124":"ATCGTCTGTG","125":"ATGTACGATG","126":"ATGTGTCTAG","127":"CACACGATAG","128":"CACTCGCACG","129":"CAGACGTCTG","130":"CAGTACTGCG","131":"CGACAGCGAG","132":"CGATCTGTCG","133":"CGCGTGCTAG","134":"CGCTCGAGTG","135":"CGTGATGACG","136":"CTATGTACAG","137":"CTCGATATAG","138":"CTCGCACGCG","139":"CTGCGTCACG","140":"CTGTGCGTCG","141":"TAGCATACTG","142":"TATACATGTG","143":"TATCACTCAG","144":"TATCTGATAG","145":"TCGTGACATG","146":"TCTGATCGAG","147":"TGACATCTCG","148":"TGAGCTAGAG","149":"TGATAGAGCG","150":"TGCGTGTGCG","151":"TGCTAGTCAG","152":"TGTATCACAG","153":"TGTGCGCGTG"}
+MIDIC = {"1":"ACGAGTGCGT","40":"TACGCTGTCT","2":"ACGCTCGACA","41":"TAGTGTAGAT","3":"AGACGCACTC","42":"TCGATCACGT","4":"AGCACTGTAG","43":"TCGCACTAGT","5":"ATCAGACACG","44":"TCTAGCGACT","6":"ATATCGCGAG","45":"TCTATACTAT","7":"CGTGTCTCTA","46":"TGACGTATGT","8":"CTCGCGTGTC","47":"TGTGAGTAGT","9":"TAGTATCAGC","10":"TCTCTATGCG","48":"ACAGTATATA","11":"TGATACGTCT","49":"ACGCGATCGA","12":"TACTGAGCTA","13":"CATAGTAGTG","50":"ACTAGCAGTA","14":"CGAGAGATAC","51":"AGCTCACGTA","15":"ATACGACGTA","52":"AGTATACATA","16":"TCACGTACTA","53":"AGTCGAGAGA","17":"CGTCTAGTAC","54":"AGTGCTACGA","18":"TCTACGTAGC","55":"CGATCGTATA","19":"TGTACTACTC","56":"CGCAGTACGA","20":"ACGACTACAG","57":"CGCGTATACA","21":"CGTAGACTAG","58":"CGTACAGTCA","22":"TACGAGTATG","59":"CGTACTCAGA","23":"TACTCTCGTG","60":"CTACGCTCTA","24":"TAGAGACGAG","61":"CTATAGCGTA","25":"TCGTCGCTCG","62":"TACGTCATCA","26":"ACATACGCGT","63":"TAGTCGCATA","27":"ACGCGAGTAT","64":"TATATATACA","28":"ACTACTATGT","65":"TATGCTAGTA","29":"ACTGTACAGT","66":"TCACGCGAGA","30":"AGACTATACT","67":"TCGATAGTGA","31":"AGCGTCGTCT","68":"TCGCTGCGTA","32":"AGTACGCTAT","69":"TCTGACGTCA","33":"ATAGAGTACT","70":"TGAGTCAGTA","34":"CACGCTACGT","71":"TGTAGTGTGA","35":"CAGTAGACGT","72":"TGTCACACGA","36":"CGACGTGACT","73":"TGTCGTCGCA","37":"TACACACACT","74":"ACACATACGC","38":"TACACGTGAT","75":"ACAGTCGTGC","39":"TACAGATCGT","76":"ACATGACGAC","77":"ACGACAGCTC","78":"ACGTCTCATC","79":"ACTCATCTAC","80":"ACTCGCGCAC","81":"AGAGCGTCAC","82":"AGCGACTAGC","83":"AGTAGTGATC","84":"AGTGACACAC","85":"AGTGTATGTC","86":"ATAGATAGAC","87":"ATATAGTCGC","88":"ATCTACTGAC","89":"CACGTAGATC","90":"CACGTGTCGC","91":"CATACTCTAC","92":"CGACACTATC","93":"CGAGACGCGC","94":"CGTATGCGAC","95":"CGTCGATCTC","96":"CTACGACTGC","97":"CTAGTCACTC","98":"CTCTACGCTC","99":"CTGTACATAC","100":"TAGACTGCAC","101":"TAGCGCGCGC","102":"TAGCTCTATC","103":"TATAGACATC","104":"TATGATACGC","105":"TCACTCATAC","106":"TCATCGAGTC","107":"TCGAGCTCTC","108":"TCGCAGACAC","109":"TCTGTCTCGC","110":"TGAGTGACGC","111":"TGATGTGTAC","112":"TGCTATAGAC","113":"TGCTCGCTAC","114":"ACGTGCAGCG","115":"ACTCACAGAG","116":"AGACTCAGCG","117":"AGAGAGTGTG","118":"AGCTATCGCG","119":"AGTCTGACTG","120":"AGTGAGCTCG","121":"ATAGCTCTCG","122":"ATCACGTGCG","123":"ATCGTAGCAG","124":"ATCGTCTGTG","125":"ATGTACGATG","126":"ATGTGTCTAG","127":"CACACGATAG","128":"CACTCGCACG","129":"CAGACGTCTG","130":"CAGTACTGCG","131":"CGACAGCGAG","132":"CGATCTGTCG","133":"CGCGTGCTAG","134":"CGCTCGAGTG","135":"CGTGATGACG","136":"CTATGTACAG","137":"CTCGATATAG","138":"CTCGCACGCG","139":"CTGCGTCACG","140":"CTGTGCGTCG","141":"TAGCATACTG","142":"TATACATGTG","143":"TATCACTCAG","144":"TATCTGATAG","145":"TCGTGACATG","146":"TCTGATCGAG","147":"TGACATCTCG","148":"TGAGCTAGAG","149":"TGATAGAGCG","150":"TGCGTGTGCG","151":"TGCTAGTCAG","152":"TGTATCACAG","153":"TGTGCGCGTG"}
 
 
 class writeable_dir(argparse.Action):
@@ -171,13 +174,13 @@ def convertDescToFlexBarcodes(descfile, outputfile, verbose):
         elif isValidBarcode(line[1]):
           b1 = line[1]
         else:
-          raise MyError("Invalid barcode #1 in desc file") # new - edited, ori: raise MyError("Invalid barcode in desc file")
+          raise MyError("Invalid barcode in desc file")
         if line[2] in MIDIC:
           b2 = MIDIC[line[2]]
         elif isValidBarcode(line[2]):
           b2 = line[2]
         else:
-          raise MyError("Invalid barcode #2 in desc file") # new - edited, ori: raise MyError("Invalid barcode in desc file")
+          raise MyError("Invalid barcode in desc file")
 
         if ((line[1], line[2]) in pairedMIDs) or ((line[2], line[1]) in pairedMIDs):
           raise MyError("Duplicated MID id pair.")
@@ -186,25 +189,17 @@ def convertDescToFlexBarcodes(descfile, outputfile, verbose):
 
         #write barcode sequences with primers
         if b1 not in barcodes:
-	  if line[1] == "0":    # new - added
-	    outfile.write(">B_" + line[1] + "_forward\n")    # new - added
-            outfile.write(FORWARD_PRIMER +"\n")     # new - added
-	  else:
-            outfile.write(">B_" + line[1] + "_forward\n")
-            outfile.write(b1 + FORWARD_PRIMER +"\n")
-            #outfile.write(">B_" + "_reverse\n")	# new - deactivated
-            #outfile.write(b1 + REVERSE_PRIMER +"\n")	# new - deactivated
+          outfile.write(">B_" + line[1] + "_forward\n")
+          outfile.write(b1 + FORWARD_PRIMER +"\n")
+          outfile.write(">B_" + line[1] + "_reverse\n")
+          outfile.write(b1 + REVERSE_PRIMER +"\n")
           barcodes.add(b1)
 
-	if b2 not in barcodes:
-	  if line[2] == "0":	# new - added
-	    outfile.write(">B_" + line[2] + "_reverse\n")    # new - added
-	    outfile.write(REVERSE_PRIMER +"\n")     # new - added
-	  else:
-            #outfile.write(">B_" + line[2] + "_forward\n")	# new - deactivated
-            #outfile.write(b2 + FORWARD_PRIMER +"\n")	# new - deactivated
-            outfile.write(">B_" + line[2] + "_reverse\n")
-            outfile.write(b2 + REVERSE_PRIMER +"\n")
+        if b2 not in barcodes:
+          outfile.write(">B_" + line[2] + "_forward\n")
+          outfile.write(b2 + FORWARD_PRIMER +"\n")
+          outfile.write(">B_" + line[2] + "_reverse\n")
+          outfile.write(b2 + REVERSE_PRIMER +"\n")
           barcodes.add(b2)
 
   return outputfile, pairedMIDs
@@ -401,6 +396,8 @@ def removeLowSupportReads(per_id, min_size, chimeric_filt, verbose):
       + " -strand plus"
       + " -id " + str(per_id)
       + " -dbmatched " + f[:-6] + "_centroids_withSize.fasta"
+      + " -otutabout " + f[:-6] + "_otuTable.txt"	# new - added
+      + " -blast6out " + f[:-6] + "_blast6out.txt"	# new - added
       + " -sizeout"
       )
 
@@ -756,7 +753,10 @@ def main():
       outputdir = args.outputdir + "temp_files/"
       os.mkdir(outputdir)
   except OSError, e:
-      if e.errno != 17: #ignores error if folders has already been created.
+      if e.errno == 17: # new - original version ignored e.errno != 17 if folders has already been created (i.e. if e.errno != 17:)
+          print("Remove directory: ", outputdir) # new
+          raise         # new
+      else:             # new
           raise
       pass
 

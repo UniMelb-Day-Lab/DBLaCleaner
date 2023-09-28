@@ -4,9 +4,9 @@ A pipeline for demultiplexing and identifying VAR DBLalpha tags in Illumina pair
 ## Installation
 The program is written in python to run on unix systems. It requires the programs HMMER, flexbar, usearch and pear to be installed seperately. The hardcoded location of these programs need to be entered into the corresponding variables at the top of the python script.
 
-## Versions
-Use V1.0 (cleanDBLalpha.py) if both primers are barcoded<br />
-Use V2.0 (cleanDBLalpha.noRevMID.py) if only the forward primer is barcoded (with a universal reverse unbarcoded primer)
+## Scripts
+Use cleanDBLalpha.py if both primers are barcoded<br />
+Use cleanDBLalpha.noRevMID.py if only the forward primer is barcoded (with a universal reverse unbarcoded primer)
 
 ## Description/mapping file format (tab-separated)
 
@@ -64,3 +64,8 @@ To generate a nice summary report of the cleaning run a Rmarkdown files is provi
 ```
 R -e 'rmarkdown::render("/path/to/summaryReport.Rmd", params = list(summary_file = "/path/to/summaryStatistics.log"), output_file="/output/path/summaryStatistics.html")'
 ```
+
+##Release notes
+DBLaCleaner v1.0 (7th August 2023) - added 'cleanDBLalpha.noRevMID.py' to process amplicons with only one barcoded forward primer (and a universal reverse unbarcoded primer)
+DBLaCleaner v1.1 (28th September 2023) - codes of 'cleanDBLalpha.py' and 'cleanDBLalpha.noRevMID.py' were modified to raise error and stop run when 'temp_files' folder already exists
+
