@@ -1,4 +1,4 @@
-## version 1.2 (28th September 2023)
+## version 1.1 (28th September 2023)
 
 import sys, os
 import argparse
